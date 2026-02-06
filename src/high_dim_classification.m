@@ -1,22 +1,16 @@
 %{
-                    EECE5644 FALL 2025 - ASSIGNMENT 1
-                                QUESTION 3
-        REAL-WORLD CLASSIFICATION WITH GAUSSIAN ASSUMPTIONS
+              High-Dimensional Classification with Fisher LDA
+    
+    Demonstrates why dimensionality reduction is essential when standard
+    Gaussian classifiers fail due to numerical underflow in high-dimensional spaces.
+    
+ Datasets:
+    - Wine Quality - 11 features (direct classification)
+    - HAR -  561 features (requires LDA preprocessing)
 
-NOTE ON COLLABORATION:
-Numerous attempts to get a reasonable P(error) for HAR using ideas from
-previous sections proof futile. This code was developed through extensive
-collaboration with Claude AI.
-Major components including strategy selection, LDA implementation,
-regularization decisions, and analysis were developed with Claude's
-assistance.
-
-All implementation decisions, code integration, and final analysis
-represent collaborative work synthesized into my own understanding.
 %}
 
 clear all, close all,
-
 
 % PART A: WINE QUALITY DATASE
 
@@ -24,13 +18,13 @@ clear all, close all,
 fprintf('WINE QUALITY DATASET CLASSIFICATION\n');
 
 
-% DATA LOADING - Utilized suggestions from Copilot
+% DATA LOADING
 data = readtable('winequality-white.csv', 'Delimiter', ';');
 features = table2array(data(:, 1:11));
 labels = table2array(data(:, 12));
   
 
-% Transpose data - Based on sample code (ERMwithClabels.m)
+% Transpose data
 x = features';
 label = labels';
 
@@ -45,7 +39,7 @@ fprintf('  Classes: %d (Quality scores: ', C);
 fprintf('%d ', uniqueLabels);
 fprintf(')\n\n');
 
-% Parameter estimation - Based on sample code (ERMwithClabels.m)
+% Parameter estimation
 priors = zeros(C, 1);
 mu = zeros(n, C);
 Sigma = zeros(n, n, C);
@@ -63,7 +57,7 @@ for l = 1:C
     fprintf('Class %d: N=%d, Prior=%.4f\n', classLabel, Nl, priors(l));
 end
 
-% Regularization decision - Murphy (2012) Section 4.2.6 + adapted from discussion with Claude
+% Regularization decision -
 fprintf('\n=== REGULARIZATION DECISION ===\n');
 fprintf('Features (n): %d\n', n);
 fprintf('Total Samples (N): %d\n', N);
@@ -72,7 +66,6 @@ fprintf('Approximate samples per class: %.0f\n', N/C);
 sampleToFeatureRatio = (N/C) / n;
 fprintf('Sample-to-feature ratio: %.2f\n', sampleToFeatureRatio);
 
-% Decision framework createcd by Claude based on Murphy (2012)
 if sampleToFeatureRatio > 10
     fprintf('→ Ratio > 10:1 (well-conditioned)\n');
     fprintf('→ Decision: NO regularization\n');
@@ -86,7 +79,7 @@ else
 end
 
 
-% Classification - Based on sample code (ERMwithClabels.m)
+% Classification
 pxgivenl = zeros(C, N);
 for l = 1:C
     pxgivenl(l, :) = evalGaussian(x, mu(:,l), Sigma(:,:,l));
@@ -98,7 +91,7 @@ classPosteriors = pxgivenl .* repmat(priors, 1, N) ./ repmat(px, C, 1);
 [~, decisions] = max(classPosteriors, [], 1);
 decisionsLabel = uniqueLabels(decisions);
 
-% Confusion Matrix - Based on sample code (ERMwithClabels.m)
+% Confusion Matrix 
 ConfusionMatrix = zeros(C, C);
 for d = 1:C
     for l = 1:C
@@ -130,7 +123,7 @@ for l = 1:C
             ConfusionMatrix(l, l), 100*ConfusionMatrix(l, l));
 end
 
-% PCA VISUALIZATION - Based on sample code (pca.m)
+% PCA VISUALIZATION 
 muhat = mean(x, 2);
 Sigmahat = cov(x');
 xzm = x - muhat * ones(1, N);
@@ -140,7 +133,7 @@ Q = Q(:, ind);
 D = diag(d);
 y = Q' * xzm;
 
-% Plot visualization - adapted from discussion with Claude
+% Plot visualization 
 figure(1), clf;
 subplot(1, 2, 1);
 hold on;
@@ -168,7 +161,7 @@ grid on;
 
 fprintf('HUMAN ACTIVITY RECOGNITION DATASET\n');
 
-% DATA LOADING - Utilized suggestions from Copilot
+% DATA LOADING 
 X_train = load('Train/X_train.txt');
 y_train = load('Train/y_train.txt');
 X_test = load('Test/X_test.txt');
@@ -182,7 +175,7 @@ fprintf('  Test set: %d samples\n', size(X_test, 1));
 fprintf('  Combined: %d samples\n', size(features, 1));
 
 
-% Transpose data - Based on sample code (ERMwithClabels.m)
+% Transpose data 
 x_original = features';
 label = labels';
 
@@ -204,8 +197,7 @@ for l = 1:C
             Nl, Nl/N);
 end
 
-% Strategy decision - Created by Claude after extensive discussion
-% based on Murphy (2012) Section 4.3.3 and class material
+% Strategy decision 
 fprintf('\n=== CLASSIFICATION STRATEGY ===\n');
 fprintf('Original dimensionality: n = %d\n', n);
 fprintf('Sample-to-feature ratio: %.2f:1 (severely ill-conditioned)\n', (N/C)/n);
@@ -215,19 +207,17 @@ fprintf('  2. Covariance estimation: Need ~314,721 parameters per class\n');
 fprintf('  3. Only ~1,700 samples per class available\n\n');
 
 fprintf('SOLUTION: Dimensionality reduction BEFORE classification\n');
-fprintf('Method: Multi-class Fisher LDA (Professor''s approach)\n');
-fprintf('Reference: Murphy (2012) Section 4.3.3 - Fisher discriminant analysis\n\n');
+fprintf('Method: Multi-class Fisher LDA \n');
 
-% Multiclass Fisher LDA - Implemented with Claude using Professor's fisherLDA.m concepts
-% Adapted from Murphy (2012) Section 4.3.3 and Professor's fisherLDA.m
+% Multiclass Fisher LDA 
 % Reduce from 561D to (C-1)D = 5D space that maximizes class separation
 
 
-% Estimate overall mean - Based on sample code (pca.m)
+% Estimate overall mean 
 mu_overall = mean(x_original, 2);
 
-% Compute within-class and between-class scatter - Based on sample code (fisherLDA.m)
-% Extended to multi-class case with Claude
+% Compute within-class and between-class scatter 
+% Extended to multi-class case 
 Sw = zeros(n, n);  % Within-class scatter
 Sb = zeros(n, n);  % Between-class scatter
 
@@ -246,21 +236,19 @@ for l = 1:C
     Sb = Sb + Nl * (diff * diff');
 end
 
-% Add regularization to Sw for numerical stability - adapted from discussion with Claude
+% Add regularization to Sw for numerical stability 
 eigvals_Sw = eig(Sw);
 lambda_Sw = 0.1 * mean(eigvals_Sw(eigvals_Sw > 1e-10));
 Sw_reg = Sw + lambda_Sw * eye(n);
 
 % Solve generalized eigenvalue problem: Sb*w = λ*Sw*w
-% Based on sample code (fisherLDA.m) - Fisher's LDA criterion
 [W, D_lda] = eig(Sb, Sw_reg);
 
-% Sort by eigenvalues (largest = most discriminative) - From Professor's fisherLDA.m
+% Sort by eigenvalues (largest = most discriminative) 
 [d_lda, ind] = sort(real(diag(D_lda)), 'descend');
 W = W(:, ind);
 
-% Keep top (C-1) = 5 discriminant directions - Adapted from discussion with
-% Claude
+% Keep top (C-1) = 5 discriminant directions 
 nProjected = C - 1;
 W_lda = W(:, 1:nProjected);
 
@@ -269,14 +257,14 @@ fprintf('  Top 5 eigenvalues: ');
 fprintf('%.4f ', d_lda(1:5));
 fprintf('\n\n');
 
-% Project Data to low-dimensional space - Based on sample code (fisherLDA.m)
+% Project Data to low-dimensional space 
 x = W_lda' * x_original;  % Now x is 5 x 10299
 
 
-% % Update dimensions - Based on sample code (ERMwithClabels.m)
+% % Update dimensions 
 [n, N] = size(x);  
 
-% Parameter estimation - Based on sample code (ERMwithClabels.m)
+% Parameter estimation
 priors = zeros(C, 1);
 mu = zeros(n, C);
 Sigma = zeros(n, n, C);
@@ -291,7 +279,7 @@ for l = 1:C
     Sigma(:,:, l) = cov(x_class');
 end
 
-% Regularization in 5D space - Adopted suggestion from Claude
+% Regularization in 5D space 
 alpha = 0.05;
 for l = 1:C
     eigvals = eig(Sigma(:,:,l));
@@ -300,7 +288,7 @@ for l = 1:C
 end
 fprintf('\n');
 
-% Classification - Based on sample code (ERMwithClabels.m)
+% Classification
 pxgivenl = zeros(C, N);
 for l = 1:C
     pxgivenl(l, :) = evalGaussian(x, mu(:,l), Sigma(:,:,l));
@@ -312,7 +300,7 @@ classPosteriors = pxgivenl .* repmat(priors, 1, N) ./ repmat(px, C, 1);
 [~, decisions] = max(classPosteriors, [], 1);
 decisionsLabel = uniqueLabels(decisions);
 
-% Confusion Matrux - Based on sample code (ERMwithClabels.m)
+% Confusion Matrux 
 ConfusionMatrix = zeros(C, C);
 for d = 1:C
     for l = 1:C
@@ -344,7 +332,7 @@ for l = 1:C
             ConfusionMatrix(l, l), 100*ConfusionMatrix(l, l));
 end
 
-% VISUALIZATION in LDA space - adapted from discussion with Claude
+% VISUALIZATION in LDA space 
 figure(2), clf;
 subplot(1, 2, 1);
 hold on;
@@ -366,7 +354,7 @@ ylabel('Eigenvalue (Discriminative Power)');
 title('HAR: LDA Eigenvalue Spectrum');
 grid on;
 
-% 3D visualization - adapted from discussion with Claude
+% 3D visualization 
 figure(3), clf;
 hold on;
 for l = 1:C
@@ -380,9 +368,6 @@ legend('Location', 'best');
 grid on;
 view(45, 30);
 
-
-%Section was added based on information given by Claude to better
-%understand the strategy used
 fprintf('\nDISCUSSION: MODEL CHOICES AND APPROPRIATENESS\n');
 fprintf('========================================\n\n');
 
@@ -414,16 +399,14 @@ fprintf('1. Wine: Low dimensions → Direct Gaussian works\n');
 fprintf('2. HAR: High dimensions → LDA preprocessing essential\n');
 fprintf('3. LDA reduces 561D → 5D while preserving class separation\n');
 fprintf('4. In 5D space, (2π)^(-5/2) ≈ 0.06 (no underflow!)\n');
-fprintf('5. Both datasets use Professor''s classification pipeline\n\n');
 
 
-
-%Code for function was taken from sample code (evalGaussian.m)
 function g = evalGaussian(x, mu, Sigma)
 % Evaluates the Gaussian pdf N(mu,Sigma) at each column of X
-% Source: Professor's evalGaussian.m (used verbatim)
+
 [n, N] = size(x);
 C = ((2*pi)^n * det(Sigma))^(-1/2);
 E = -0.5*sum((x-repmat(mu,1,N)).*(inv(Sigma)*(x-repmat(mu,1,N))),1);
 g = C*exp(E);
+
 end
