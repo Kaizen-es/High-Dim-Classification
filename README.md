@@ -16,7 +16,7 @@ The HAR (Human Activity Recognition) and Wine Quality classification achieved an
 UCI HAR Dataset — 10,299 samples, 561 features, 6 activity classes
 UCI Wine Quality — 4,898 samples, 11 features, 7 quality classes
 
-## Future Work
+## Upcoming
 Python implementation with scikit-learn
 Comparison with PCA (unsupervised) vs LDA (supervised) dimensionality reduction
 
